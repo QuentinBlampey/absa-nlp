@@ -1,4 +1,6 @@
 import pandas as pd
+import argparse
+import json
 from transformers import DistilBertForSequenceClassification, DistilBertTokenizerFast
 from torch import nn
 import torch
@@ -47,15 +49,20 @@ class Classifier:
         optimizer = Adam(model.parameters(), lr=self.learning_rate)
 
         for epoch in range(epochs):
-            print(f"\n[Epoch {epoch}]")
-            for texts, category_indices, labels in loader:
+            print(f"\n[Epoch {epoch+1}]")
+            losses = []
+            for i, (texts, category_indices, labels) in enumerate(loader):
                 labels = labels.type(torch.FloatTensor)
                 inputs = tokenizer(list(texts), return_tensors='pt', padding=True)
                 logits = model(**inputs).logits
                 logits = logits[range(len(labels)), category_indices]
 
                 loss = criterion(logits, labels)
-                print(loss.item())
+                losses.append(loss.item())
+
+                if (i+1) % 10 == 0:
+                    print(f"  [{i-9:2}:{i:2}] {sum(losses)/len(losses)}")
+                    losses = []
                 
                 optimizer.zero_grad()
                 loss.backward()
@@ -70,10 +77,18 @@ class Classifier:
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-e", "--epochs", type=int, default=10,
+                        help="number of epochs")
+    parser.add_argument("-lr", "--learning_rate", type=float, default=1e-4,
+                        help="learning rate")
+
+    args = parser.parse_args()
+    print(f"> args:\n{json.dumps(vars(args), sort_keys=True, indent=4)}\n")
     trainfile = '../data/traindata.csv'
 
-    classifier = Classifier(1e-4)
-    classifier.train(trainfile)
+    classifier = Classifier(args.learning_rate)
+    classifier.train(trainfile, epochs=args.epochs)
 
 
     
