@@ -56,7 +56,11 @@ class Classifier:
             for i, (texts, category_indices, labels) in enumerate(loader):
                 labels = labels.type(torch.FloatTensor)
                 inputs = self.tokenizer(list(texts), return_tensors='pt', padding=True)
-                logits = self.model(**inputs).logits
+                logits = self.model(**inputs)
+                try:
+                    logits = logits.logits
+                except:
+                    logits = logits[0]
                 logits = logits[range(len(labels)), category_indices]
 
                 y_true += labels.tolist()
