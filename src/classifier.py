@@ -78,7 +78,7 @@ class Classifier:
                 optimizer.step()
 
             print(f"\n> Balanced accuracy: {metrics.balanced_accuracy_score(y_true, y_pred)}")
-            print(f"\n> Accuracy: {metrics.accuracy_score(y_true, y_pred)}")
+            print(f"> Accuracy: {metrics.accuracy_score(y_true, y_pred)}")
             print(f"> F1-score: {metrics.f1_score(y_true, y_pred)}\n")
 
 
