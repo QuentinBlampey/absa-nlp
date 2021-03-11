@@ -82,7 +82,7 @@ class Classifier:
 
             if devfile:
                 print("\nValidation:")
-                y_true, y_pred = self.predict(devfile)
+                y_true, y_pred = self.predict(devfile, return_labels=True)
                 self.print_metrics(y_true, y_pred)
 
 
@@ -118,7 +118,7 @@ class Classifier:
                 logits = logits[range(len(labels)), category_indices]
                 y_pred += (logits >= 0).type(torch.int8).tolist()
                 y_true += labels.tolist()
-                
+
         return (y_true, y_pred) if return_labels else ['positive' if x == 1 else 'negative' for x in y_pred]
 
 
