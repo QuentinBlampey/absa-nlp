@@ -31,7 +31,7 @@ class Classifier:
             start, end = map(int, slice.split(':'))
             df.at[i, 'sentence'] = f"{sentence[:start]}{self.start_of_term} {sentence[start:end]} {self.end_of_term}{sentence[end:]}"
 
-    def train(self, trainfile):
+    def train(self, trainfile, devfile=None):
         """Trains the classifier model on the training set stored in file trainfile"""
         df = self.read_csv(trainfile)
         self.preprocess(df)
@@ -52,6 +52,7 @@ class Classifier:
 
         for epoch in range(self.epochs):
             print(f"\n[Epoch {epoch+1}]")
+            self.model.train()
             losses, y_true, y_pred = [], [], []
             for i, (texts, category_indices, labels) in enumerate(loader):
                 labels = labels.type(torch.FloatTensor)
@@ -77,17 +78,27 @@ class Classifier:
                 loss.backward()
                 optimizer.step()
 
-            print(f"\n> Balanced accuracy: {metrics.balanced_accuracy_score(y_true, y_pred)}")
-            print(f"> Accuracy: {metrics.accuracy_score(y_true, y_pred)}")
-            print(f"> F1-score: {metrics.f1_score(y_true, y_pred)}\n")
+            self.print_metrics(y_true, y_pred)
+
+            if devfile:
+                print("\nValidation:")
+                y_true, y_pred = self.predict(devfile)
+                self.print_metrics(y_true, y_pred)
 
 
+    def print_metrics(self, y_true, y_pred):
+            print(f"\n  > Balanced accuracy: {metrics.balanced_accuracy_score(y_true, y_pred)}")
+            print(f"  > Accuracy: {metrics.accuracy_score(y_true, y_pred)}")
+            print(f"  > F1-score: {metrics.f1_score(y_true, y_pred)}\n")
 
-    def predict(self, datafile):
+
+    def predict(self, datafile, return_labels=False):
         """Predicts class labels for the input instances in file 'datafile'
         Returns the list of predicted labels
         """
-        predicted_labels = []
+        self.model.eval()
+
+        y_pred, y_true = [], []
 
         df = self.read_csv(datafile)
         self.preprocess(df)
@@ -95,14 +106,16 @@ class Classifier:
         dataset = AbsaDataset(df)
         loader = DataLoader(dataset, batch_size=16, shuffle=False)
 
-        for texts, category_indices, _ in loader:
-            labels = labels.type(torch.FloatTensor)
-            inputs = self.tokenizer(list(texts), return_tensors='pt', padding=True)
-            logits = self.model(**inputs).logits
-            logits = logits[range(len(labels)), category_indices]
-            predicted_labels += (logits >= 0).type(torch.int8).tolist()
+        with torch.no_grad():
+            for texts, category_indices, labels in loader:
+                labels = labels.type(torch.FloatTensor)
+                inputs = self.tokenizer(list(texts), return_tensors='pt', padding=True)
+                logits = self.model(**inputs).logits
+                logits = logits[range(len(labels)), category_indices]
+                y_pred += (logits >= 0).type(torch.int8).tolist()
+                y_true += labels.tolist()
 
-        return predicted_labels
+        return y_true, y_pred if return_labels else y_pred
 
 
 
@@ -116,9 +129,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
     print(f"> args:\n{json.dumps(vars(args), sort_keys=True, indent=4)}\n")
     trainfile = '../data/traindata.csv'
+    devfile = '../data/traindata.csv'
 
     classifier = Classifier(args.learning_rate, epochs=args.epochs)
-    classifier.train(trainfile)
+    classifier.train(trainfile, devfile)
 
 
     
