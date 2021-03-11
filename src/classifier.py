@@ -18,7 +18,7 @@ class Classifier:
     end_of_term = '<eot>'
     model_name = 'distilbert-base-uncased'
 
-    def __init__(self, learning_rate=1e-4, epochs=10):
+    def __init__(self, learning_rate=1e-4, epochs=20):
         self.learning_rate = learning_rate
         self.epochs = epochs
 
@@ -118,8 +118,8 @@ class Classifier:
                 logits = logits[range(len(labels)), category_indices]
                 y_pred += (logits >= 0).type(torch.int8).tolist()
                 y_true += labels.tolist()
-
-        return y_true, y_pred if return_labels else y_pred
+                
+        return (y_true, y_pred) if return_labels else ['positive' if x == 1 else 'negative' for x in y_pred]
 
 
 
