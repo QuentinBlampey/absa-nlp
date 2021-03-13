@@ -18,7 +18,7 @@ class Classifier:
     end_of_term = '<eot>'
     model_name = 'distilbert-base-uncased'
 
-    def __init__(self, learning_rate=1e-4, epochs=20):
+    def __init__(self, learning_rate=1e-4, epochs=30):
         self.learning_rate = learning_rate
         self.epochs = epochs
 
@@ -125,13 +125,14 @@ class Classifier:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("-e", "--epochs", type=int, default=10,
+    parser.add_argument("-e", "--epochs", type=int, default=30,
                         help="number of epochs")
     parser.add_argument("-lr", "--learning_rate", type=float, default=1e-4,
                         help="learning rate")
 
     args = parser.parse_args()
     print(f"> args:\n{json.dumps(vars(args), sort_keys=True, indent=4)}\n")
+    
     trainfile = '../data/traindata.csv'
     devfile = '../data/traindata.csv'
 
